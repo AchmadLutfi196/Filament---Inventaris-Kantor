@@ -3,6 +3,7 @@
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\Admin\ExportController;
 use App\Http\Controllers\Auth\AuthenticatedSessionController;
+use App\Http\Controllers\Auth\RegisteredUserController;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
@@ -20,6 +21,12 @@ Route::get('/', function () {
 
 Route::post('/frontend/logout', [AuthenticatedSessionController::class, 'destroy'])
     ->name('frontend.logout');
+
+Route::middleware('guest')->group(function () {
+    Route::get('register', [RegisteredUserController::class, 'create'])
+                ->name('register');
+    Route::post('register', [RegisteredUserController::class, 'store']);
+});
 
 // Route Frontend
 Route::middleware(['auth'])->group(function () {
