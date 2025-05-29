@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\Admin\ExportController;
+use App\Http\Controllers\Auth\AuthenticatedSessionController;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
@@ -16,6 +17,9 @@ Route::get('/', function () {
     }
     return redirect()->route('login');
 })->name('home');
+
+Route::post('/frontend/logout', [AuthenticatedSessionController::class, 'destroy'])
+    ->name('frontend.logout');
 
 // Route Frontend
 Route::middleware(['auth'])->group(function () {
@@ -145,7 +149,7 @@ Route::middleware(['auth'])->group(function () {
         }
     })->name('frontend.peminjaman.export');
     
-    // Route untuk tambah peminjaman - DIPERBAIKI
+    // Route untuk tambah peminjaman 
     Route::get('/frontend/peminjaman/create', function () {
         try {
             // Ambil data barang yang tersedia untuk dipilih
@@ -167,34 +171,43 @@ Route::middleware(['auth'])->group(function () {
         }
     })->name('frontend.peminjaman.create');
     
-    Route::post('/frontend/peminjaman', function () {
+    // Route untuk simpan peminjaman (POST)
+Route::post('/frontend/peminjaman', function () {
     try {
-        // 1. Validasi input
+        // Validasi input
         $validated = request()->validate([
             'barang_id' => 'required|exists:barangs,id',
+            'jumlah' => 'required|integer|min:1',
             'tanggal_pinjam' => 'required|date',
-            'tanggal_kembali' => 'required|date|after_or_equal:tanggal_pinjam',
-            'keterangan' => 'nullable|string'
+            'tanggal_kembali_rencana' => 'required|date|after_or_equal:tanggal_pinjam', // Pastikan nama kolom ini benar
+            'keperluan' => 'nullable|string'
         ]);
         
-        // 2. Tambahkan user_id dari user yang sedang login
-        $validated['user_id'] = auth::id();
-        $validated['status'] = 'menunggu'; // Status awal peminjaman
+        // Generate kode peminjaman
+        $kode = 'PJM-' . date('Ymd') . '-' . str_pad(
+            (Peminjaman::whereDate('created_at', today())->count() + 1), 
+            3, 
+            '0', 
+            STR_PAD_LEFT
+        );
         
-        // 3. Simpan data peminjaman
-        $peminjaman = Peminjaman::create($validated);
+        // Buat peminjaman baru
+        $peminjaman = new Peminjaman();
+        $peminjaman->user_id = auth::id();
+        $peminjaman->barang_id = $validated['barang_id'];
+        $peminjaman->jumlah = $validated['jumlah'];
+        $peminjaman->tanggal_pinjam = $validated['tanggal_pinjam'];
+        $peminjaman->tanggal_kembali_rencana = $validated['tanggal_kembali_rencana']; // Gunakan kolom yang sudah ada
+        $peminjaman->status = 'pending';
+        $peminjaman->kode_peminjaman = $kode;
+        $peminjaman->keperluan = $validated['keperluan'] ?? null;
+        $peminjaman->save();
         
-        // 4. Log untuk debugging
-        \Log::info('Peminjaman berhasil dibuat', ['data' => $validated, 'peminjaman_id' => $peminjaman->id]);
-        
-        // 5. Redirect dengan pesan sukses
+        // Redirect dengan pesan sukses
         return redirect()
             ->route('frontend.peminjaman.index')
             ->with('success', 'Peminjaman berhasil diajukan dan sedang menunggu persetujuan.');
     } catch (\Exception $e) {
-        // Log error
-        \Log::error('Gagal membuat peminjaman: ' . $e->getMessage());
-        
         // Redirect dengan pesan error
         return back()
             ->withInput()

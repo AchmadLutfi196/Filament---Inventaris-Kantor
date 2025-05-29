@@ -51,10 +51,9 @@
                     @auth
                         <div class="relative">
                             <div class="flex items-center space-x-3">
-                                <span class="text-gray-700">{{ Auth::user()->name }}</span>
-                                <form method="POST" action="{{ route('logout') }}">
+                                <form action="{{ route('frontend.logout') }}" method="POST" class="inline">
                                     @csrf
-                                    <button type="submit" class="text-gray-500 hover:text-gray-700">
+                                    <button type="submit" class="bg-red-600 hover:bg-red-800 text-white font-bold py-2 px-4 rounded">
                                         Logout
                                     </button>
                                 </form>

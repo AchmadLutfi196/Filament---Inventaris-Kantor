@@ -9,49 +9,56 @@ use Filament\Widgets\TableWidget as BaseWidget;
 
 class LatestPeminjamans extends BaseWidget
 {
+    protected static ?int $sort = 2;
     protected int | string | array $columnSpan = 'full';
     
-    protected static ?string $heading = 'Peminjaman Terbaru';
-
     public function table(Table $table): Table
     {
         return $table
             ->query(
-                Peminjaman::query()->with(['user', 'barang'])->latest()->limit(10)
+                Peminjaman::query()
+                    ->latest()
+                    ->limit(5)
             )
             ->columns([
                 Tables\Columns\TextColumn::make('kode_peminjaman')
                     ->label('Kode')
-                    ->badge()
-                    ->color('primary'),
-                
+                    ->searchable()
+                    ->sortable(),
+                    
                 Tables\Columns\TextColumn::make('user.name')
-                    ->label('Peminjam'),
-                
+                    ->label('Peminjam')
+                    ->searchable(),
+                    
                 Tables\Columns\TextColumn::make('barang.nama')
                     ->label('Barang')
+                    ->searchable()
                     ->limit(30),
-                
+                    
+                Tables\Columns\TextColumn::make('tanggal_pinjam')
+                    ->date('d M Y')
+                    ->label('Tgl Pinjam')
+                    ->sortable(),
+                    
+                Tables\Columns\TextColumn::make('tanggal_kembali_rencana')
+                    ->date('d M Y')
+                    ->label('Rencana Kembali')
+                    ->sortable(),
+                    
                 Tables\Columns\TextColumn::make('status')
                     ->badge()
                     ->color(fn (string $state): string => match ($state) {
-                        'pending' => 'warning',
-                        'disetujui' => 'info',
+                        'menunggu' => 'warning',
+                        'disetujui' => 'success',
                         'ditolak' => 'danger',
-                        'dipinjam' => 'success',
-                        'dikembalikan' => 'gray',
+                        'selesai' => 'info',
                         default => 'gray',
-                    }),
-                
-                Tables\Columns\TextColumn::make('tanggal_pinjam')
-                    ->label('Tanggal')
-                    ->date('d/m/Y'),
+                    })
+                    ->formatStateUsing(fn (string $state): string => ucfirst($state)),
             ])
-            ->actions([
-                Tables\Actions\Action::make('view')
-                    ->label('Lihat')
-                    ->url(fn (Peminjaman $record): string => route('filament.admin.resources.peminjamans.view', $record))
-                    ->icon('heroicon-m-eye'),
-            ]);
+            // Hapus actions yang menyebabkan error
+            ->actions([])
+            ->defaultPaginationPageOption(5)
+            ->defaultSort('created_at', 'desc');
     }
 }
