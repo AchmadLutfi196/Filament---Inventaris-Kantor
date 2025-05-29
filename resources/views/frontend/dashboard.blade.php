@@ -69,7 +69,7 @@
                     <div class="ml-5 w-0 flex-1">
                         <dl>
                             <dt class="text-sm font-medium text-gray-500 truncate">Peminjaman Aktif</dt>
-                            <dd class="text-lg font-medium text-gray-900">{{ $peminjamanAktif }}</dd>
+                            <dd class="text-lg font-medium text-gray-900">{{ $peminjamanAktif ?? 0 }}</dd>
                         </dl>
                     </div>
                 </div>
@@ -90,7 +90,7 @@
                     <div class="ml-5 w-0 flex-1">
                         <dl>
                             <dt class="text-sm font-medium text-gray-500 truncate">Total Riwayat</dt>
-                            <dd class="text-lg font-medium text-gray-900">{{ $riwayatPeminjaman }}</dd>
+                            <dd class="text-lg font-medium text-gray-900">{{ $riwayatPeminjaman ?? 0 }}</dd>
                         </dl>
                     </div>
                 </div>
