@@ -65,11 +65,19 @@
                                         {{ $peminjaman->kode_peminjaman }}
                                     </h3>
                                     <span class="mt-2 md:mt-0 inline-flex items-center px-3 py-1 rounded-full text-sm font-medium
-                                        {{ $peminjaman->status == 'menunggu' ? 'bg-yellow-100 text-yellow-800' :
-                                           ($peminjaman->status == 'disetujui' ? 'bg-blue-100 text-blue-800' :
-                                           ($peminjaman->status == 'ditolak' ? 'bg-red-100 text-red-800' :
-                                           ($peminjaman->status == 'selesai' ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'))) }}">
+                                        @if(($peminjaman->status == 'disetujui' || $peminjaman->status == 'dipinjam') && $peminjaman->tanggal_kembali_rencana < now() && !$peminjaman->tanggal_kembali_aktual)
+                                            bg-red-100 text-red-800
+                                        @else
+                                            {{ $peminjaman->status == 'pending' ? 'bg-yellow-100 text-yellow-800' :
+                                            ($peminjaman->status == 'disetujui' ? 'bg-blue-100 text-blue-800' :
+                                            ($peminjaman->status == 'ditolak' ? 'bg-red-100 text-red-800' :
+                                            ($peminjaman->status == 'dipinjam' ? 'bg-green-100 text-green-800' :
+                                            ($peminjaman->status == 'dikembalikan' ? 'bg-gray-100 text-gray-800' : 'bg-gray-100 text-gray-800')))) }}
+                                        @endif">
                                         {{ ucfirst($peminjaman->status) }}
+                                        @if(($peminjaman->status == 'disetujui' || $peminjaman->status == 'dipinjam') && $peminjaman->tanggal_kembali_rencana < now() && !$peminjaman->tanggal_kembali_aktual)
+                                            - <span class="font-bold">Segera kembalikan!</span>
+                                        @endif
                                     </span>
                                 </div>
 
@@ -125,14 +133,13 @@
                                 @endif
 
                                 <!-- Warning untuk terlambat -->
-                                @if($peminjaman->status == 'disetujui' && $peminjaman->tanggal_kembali_rencana < now() && !$peminjaman->tanggal_kembali_aktual)
+                                @if(($peminjaman->status == 'disetujui' || $peminjaman->status == 'dipinjam') && $peminjaman->tanggal_kembali_rencana < now() && !$peminjaman->tanggal_kembali_aktual)
                                     <div class="mt-4 p-3 bg-red-50 border border-red-200 rounded-md">
                                         <p class="text-sm text-red-700 flex items-center">
                                             <svg class="w-5 h-5 mr-2 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
                                             </svg>
-                                            <span class="font-medium">Terlambat {{ now()->diffInDays($peminjaman->tanggal_kembali_rencana) }} hari!</span> 
-                                            Segera kembalikan barang.
+                                            <span class="font-medium">Terlambat {{ abs(floor(now()->diffInDays($peminjaman->tanggal_kembali_rencana))) }} hari! Segera kembalikan barang.</span> 
                                         </p>
                                     </div>
                                 @endif
