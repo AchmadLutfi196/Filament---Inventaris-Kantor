@@ -9,23 +9,36 @@ use App\Models\Peminjaman;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\View\View;
+use Illuminate\Support\Facades\DB;
 
 class DashboardController extends Controller
 {
     public function index(): View
     {
+        $userId = Auth::id();
+        
+        // Total barang tersedia
         $totalBarang = Barang::tersedia()->count();
+        
+        // Total kategori
         $totalKategori = Kategori::count();
-        $peminjamanAktif = Peminjaman::where('user_id', Auth::id())
-                                    ->whereIn('status', ['pending', 'disetujui', 'dipinjam'])
+        
+        // Peminjaman aktif: pending, disetujui, dipinjam
+        $peminjamanAktif = Peminjaman::where('user_id', $userId)
+                                ->whereIn('status', ['pending', 'disetujui', 'dipinjam'])
+                                ->count();
+        
+        // Riwayat peminjaman: hanya yang sudah selesai/ditolak/dibatalkan
+        $riwayatPeminjaman = Peminjaman::where('user_id', $userId)
+                                    ->whereIn('status', ['dikembalikan', 'selesai', 'ditolak', 'dibatalkan'])
                                     ->count();
-        $riwayatPeminjaman = Peminjaman::where('user_id', Auth::id())->count();
 
         return view('frontend.dashboard', compact(
             'totalBarang',
             'totalKategori', 
             'peminjamanAktif',
-            'riwayatPeminjaman'
+            'riwayatPeminjaman',
+            'debugInfo'
         ));
     }
 }

@@ -212,39 +212,6 @@ class BarangResource extends Resource
                         ->requiresConfirmation(),
                 ]),
             ])
-            ->headerActions([
-                Action::make('export')
-                    ->label('Export Data')
-                    ->icon('heroicon-o-arrow-down-tray')
-                    ->color('success')
-                    ->button()
-                    ->form([
-                        Forms\Components\Select::make('format')
-                            ->label('Format Export')
-                            ->options([
-                                'xlsx' => 'Excel (.xlsx)',
-                                'csv' => 'CSV (.csv)',
-                                'pdf' => 'PDF (.pdf)',
-                            ])
-                            ->default('xlsx')
-                            ->required(),
-                        
-                        Forms\Components\Toggle::make('filter_current')
-                            ->label('Gunakan Filter Saat Ini')
-                            ->default(true)
-                            ->helperText('Export akan menggunakan filter dan pencarian yang sedang aktif'),
-                    ])
-                    ->action(function (array $data) {
-                        $url = route('admin.export.barang', ['format' => $data['format']]);
-                        
-                        if ($data['filter_current']) {
-                            $queryParams = request()->query();
-                            $url .= '?' . http_build_query($queryParams);
-                        }
-                        
-                        return redirect($url);
-                    }),
-            ])
             ->defaultSort('created_at', 'desc');
     }
 

@@ -45,25 +45,27 @@
                         </div>
                     </div>
                 @else
-                    <!-- Pilih Barang -->
-                    <div class="space-y-4">
-                        <label for="barang_search" class="block text-sm font-medium text-gray-700">Cari Barang</label>
-                        <div class="relative">
-                            <input type="text" id="barang_search" placeholder="Ketik nama atau kode barang..." 
-                                   class="block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500">
-                            <div id="barang_results" class="absolute z-10 w-full bg-white border border-gray-300 rounded-md shadow-lg hidden max-h-60 overflow-auto"></div>
+                    <!-- Pilih Barang  -->
+                    <div class="bg-blue-50 border border-blue-200 rounded-lg p-6 text-center">
+                        <svg class="mx-auto h-12 w-12 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                        </svg>
+                        <h3 class="mt-2 text-lg font-medium text-gray-900">Barang Belum Dipilih</h3>
+                        <p class="mt-1 text-sm text-gray-600">
+                            Anda harus memilih barang yang akan dipinjam terlebih dahulu sebelum melanjutkan.
+                        </p>
+                        <div class="mt-6">
+                            <a href="{{ route('frontend.barang.index') }}" class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                                <svg class="mr-2 -ml-1 w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"></path>
+                                </svg>
+                                Lihat Daftar Barang
+                            </a>
                         </div>
                         <input type="hidden" name="barang_id" id="selected_barang_id" value="{{ old('barang_id') }}">
-                        <div id="selected_barang" class="hidden">
-                            <!-- Selected barang will be shown here -->
-                        </div>
                         @error('barang_id')
-                            <p class="text-red-600 text-sm">{{ $message }}</p>
+                            <p class="mt-2 text-sm text-red-600">{{ $message }}</p>
                         @enderror
-                        
-                        <p class="text-sm text-gray-500">
-                            Atau <a href="{{ route('frontend.barang.index') }}" class="text-blue-600 hover:text-blue-800">lihat daftar semua barang</a>
-                        </p>
                     </div>
                 @endif
             </div>
@@ -78,7 +80,7 @@
                 <!-- Jumlah -->
                 <div>
                     <label for="jumlah" class="block text-sm font-medium text-gray-700">Jumlah yang Dipinjam</label>
-                    <input type="number" name="jumlah" id="jumlah" min="1" value="{{ old('jumlah', 1) }}" 
+                    <input type="number" name="jumlah" id="jumlah" min="1" max="{{ $barang ? $barang->stok_tersedia : '' }}" value="{{ old('jumlah', 1) }}" 
                            class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500">
                     @error('jumlah')
                         <p class="text-red-600 text-sm mt-1">{{ $message }}</p>
@@ -167,9 +169,105 @@
 <script>
 // Auto calculate duration
 document.addEventListener('DOMContentLoaded', function() {
+    console.log('DOM loaded - Inisialisasi aplikasi peminjaman'); // Debug info
+    
     const tanggalPinjam = document.getElementById('tanggal_pinjam');
     const tanggalKembali = document.getElementById('tanggal_kembali_rencana');
     const durasiInfo = document.getElementById('durasi_info');
+    
+    // Ambil elemen form
+    const form = document.querySelector('form');
+    
+    // Validasi form saat submit
+    if (form) {
+        form.addEventListener('submit', function(event) {
+            // Validasi jumlah
+            const jumlahInput = document.getElementById('jumlah');
+            if (jumlahInput) {
+                const max = parseInt(jumlahInput.getAttribute('max') || 0);
+                const value = parseInt(jumlahInput.value || 0);
+                
+                console.log('Validasi jumlah:', { max, value }); // Debug info
+                
+                // Validasi jumlah tidak melebihi stok
+                if (max > 0 && value > max) {
+                    event.preventDefault(); // Mencegah form terkirim
+                    alert(`Jumlah maksimal yang dapat dipinjam adalah ${max} unit`);
+                    jumlahInput.value = max;
+                    jumlahInput.focus();
+                    return false;
+                }
+                
+                // Validasi jumlah minimal
+                if (value < 1) {
+                    event.preventDefault(); // Mencegah form terkirim
+                    alert('Jumlah minimal peminjaman adalah 1 unit');
+                    jumlahInput.value = 1;
+                    jumlahInput.focus();
+                    return false;
+                }
+            }
+            
+            // Jika validasi berhasil, disable tombol submit untuk mencegah double-submit
+            if (this.checkValidity()) {
+                const submitButton = this.querySelector('button[type="submit"]');
+                if (submitButton) {
+                    submitButton.disabled = true;
+                    submitButton.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Memproses...';
+                }
+            }
+        });
+    }
+
+    // Validasi input jumlah
+    const jumlahInput = document.getElementById('jumlah');
+    if (jumlahInput) {
+        // Validasi saat nilai berubah (input)
+        jumlahInput.addEventListener('input', function() {
+            validateJumlah(this);
+        });
+        
+        // Validasi saat keluar dari field (blur)
+        jumlahInput.addEventListener('blur', function() {
+            validateJumlah(this);
+        });
+        
+        // Validasi saat nilai diubah (change)
+        jumlahInput.addEventListener('change', function() {
+            validateJumlah(this);
+        });
+        
+        // Pastikan hanya angka yang diinput
+        jumlahInput.addEventListener('keypress', function(e) {
+            const charCode = e.which ? e.which : e.keyCode;
+            if (charCode > 31 && (charCode < 48 || charCode > 57)) {
+                e.preventDefault();
+                return false;
+            }
+            return true;
+        });
+    }
+
+    // Fungsi validasi jumlah
+    function validateJumlah(input) {
+        const max = parseInt(input.getAttribute('max') || 0);
+        const value = parseInt(input.value || 0);
+        
+        console.log('Validasi jumlah input:', { max, value }); // Debug info
+        
+        if (max > 0 && value > max) {
+            input.value = max;
+            alert(`Jumlah maksimal yang dapat dipinjam adalah ${max} unit`);
+            return false;
+        }
+        
+        if (value < 1 && input.value !== '') {
+            input.value = 1;
+            return false;
+        }
+        
+        return true;
+    }
 
     function updateDurasi() {
         if (tanggalPinjam.value && tanggalKembali.value) {
@@ -197,99 +295,6 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 
     tanggalKembali.addEventListener('change', updateDurasi);
-
-    // Barang search functionality (jika tidak ada barang yang dipilih)
-    @if(!$barang)
-    const searchInput = document.getElementById('barang_search');
-    const resultsDiv = document.getElementById('barang_results');
-    const selectedBarangId = document.getElementById('selected_barang_id');
-    const selectedBarangDiv = document.getElementById('selected_barang');
-
-    let searchTimeout;
-
-    searchInput.addEventListener('input', function() {
-        clearTimeout(searchTimeout);
-        const query = this.value.trim();
-        
-        if (query.length < 2) {
-            resultsDiv.classList.add('hidden');
-            return;
-        }
-
-        searchTimeout = setTimeout(() => {
-            fetch(`/api/barang/search?q=${encodeURIComponent(query)}`)
-                .then(response => response.json())
-                .then(data => {
-                    resultsDiv.innerHTML = '';
-                    
-                    if (data.length === 0) {
-                        resultsDiv.innerHTML = '<div class="p-3 text-gray-500">Tidak ada barang ditemukan</div>';
-                    } else {
-                        data.forEach(barang => {
-                            const div = document.createElement('div');
-                            div.className = 'p-3 hover:bg-gray-50 cursor-pointer border-b border-gray-100';
-                            div.innerHTML = `
-                                <div class="flex items-center space-x-3">
-                                    <div class="flex-1">
-                                        <h4 class="font-medium text-gray-900">${barang.nama}</h4>
-                                        <p class="text-sm text-gray-600">${barang.kode_barang} - ${barang.kategori.nama}</p>
-                                        <p class="text-sm text-green-600">Stok: ${barang.stok_tersedia} unit</p>
-                                    </div>
-                                </div>
-                            `;
-                            div.addEventListener('click', () => selectBarang(barang));
-                            resultsDiv.appendChild(div);
-                        });
-                    }
-                    
-                    resultsDiv.classList.remove('hidden');
-                })
-                .catch(error => {
-                    console.error('Search error:', error);
-                });
-        }, 300);
-    });
-
-    function selectBarang(barang) {
-        selectedBarangId.value = barang.id;
-        searchInput.value = barang.nama;
-        resultsDiv.classList.add('hidden');
-        
-        selectedBarangDiv.innerHTML = `
-            <div class="border border-gray-200 rounded-lg p-4 bg-blue-50">
-                <div class="flex items-center space-x-4">
-                    <div class="flex-1">
-                        <h4 class="text-lg font-semibold text-gray-900">${barang.nama}</h4>
-                        <p class="text-sm text-gray-600">${barang.kode_barang} - ${barang.kategori.nama}</p>
-                        <p class="text-sm text-gray-600">Lokasi: ${barang.lokasi}</p>
-                        <p class="text-sm font-medium text-green-600">Stok Tersedia: ${barang.stok_tersedia} unit</p>
-                    </div>
-                    <button type="button" onclick="clearSelection()" class="text-red-600 hover:text-red-800 text-sm">
-                        Hapus
-                    </button>
-                </div>
-            </div>
-        `;
-        selectedBarangDiv.classList.remove('hidden');
-        
-        // Update jumlah max
-        document.getElementById('jumlah').setAttribute('max', barang.stok_tersedia);
-    }
-
-    window.clearSelection = function() {
-        selectedBarangId.value = '';
-        searchInput.value = '';
-        selectedBarangDiv.classList.add('hidden');
-        document.getElementById('jumlah').removeAttribute('max');
-    };
-
-    // Hide results when clicking outside
-    document.addEventListener('click', function(e) {
-        if (!searchInput.contains(e.target) && !resultsDiv.contains(e.target)) {
-            resultsDiv.classList.add('hidden');
-        }
-    });
-    @endif
 
     // Initial duration calculation
     updateDurasi();

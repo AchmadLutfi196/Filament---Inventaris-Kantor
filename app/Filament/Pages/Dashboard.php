@@ -10,7 +10,6 @@ class Dashboard extends BaseDashboard
     {
         return [
             \App\Filament\Widgets\StatsOverview::class,
-            \App\Filament\Widgets\QuickExportWidget::class,
             \App\Filament\Widgets\LatestPeminjamans::class,
         ];
     }

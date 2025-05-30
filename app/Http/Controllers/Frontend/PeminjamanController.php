@@ -14,16 +14,26 @@ class PeminjamanController extends Controller
 {
     public function index(Request $request)
     {
-        $query = Peminjaman::with(['barang', 'barang.kategori'])
-                          ->where('user_id', auth::id());
-
-        // Filter status
+        $user = Auth::user();
+        
+        // Redirect jika user tidak login
+        if (!$user) {
+            return redirect()->route('login')->with('error', 'Silakan login terlebih dahulu.');
+        }
+        
+        // Query berdasarkan user yang login
+        $query = Peminjaman::where('user_id', $user->id);
+        
+        // Filter berdasarkan status jika ada
         if ($request->filled('status')) {
-            $query->byStatus($request->status);
+            $query->where('status', $request->status);
         }
 
-        $peminjamans = $query->orderBy('created_at', 'desc')->paginate(10)->withQueryString();
-
+        // Ambil data peminjaman
+        $peminjamans = $query->with(['barang.kategori'])
+                            ->latest('created_at')
+                            ->paginate(10);
+        
         return view('frontend.peminjaman.index', compact('peminjamans'));
     }
 

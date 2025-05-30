@@ -1,12 +1,11 @@
 <?php
 
 use App\Http\Controllers\ProfileController;
-use App\Http\Controllers\Admin\ExportController;
+use App\Http\Controllers\Frontend\PeminjamanController;
 use App\Http\Controllers\Auth\AuthenticatedSessionController;
 use App\Http\Controllers\Auth\RegisteredUserController;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Log;
 use App\Models\Barang; 
 use App\Models\Peminjaman;
 use App\Models\Kategori;
@@ -37,8 +36,15 @@ Route::middleware(['auth'])->group(function () {
             $totalKategori = Kategori::count() ?? 0;
             $totalPinjam = Peminjaman::count() ?? 0;
             $barangTersedia = $totalBarang; 
-            $peminjamanAktif = 0; 
-            $riwayatPeminjaman = 0; 
+            // Hitung peminjaman aktif: pending, disetujui, dipinjam
+            $peminjamanAktif = Peminjaman::where('user_id', Auth::id())
+                                        ->whereIn('status', ['pending', 'disetujui', 'dipinjam'])
+                                        ->count() ?? 0;
+            
+            // Hitung riwayat peminjaman: yang sudah selesai/dikembalikan/ditolak
+            $riwayatPeminjaman = Peminjaman::where('user_id', Auth::id())
+                                        ->whereIn('status', ['dikembalikan', 'selesai', 'ditolak', 'dibatalkan'])
+                                        ->count() ?? 0; 
             
             return view('frontend.dashboard', compact(
                 'totalBarang', 
@@ -140,22 +146,6 @@ Route::middleware(['auth'])->group(function () {
         }
     })->name('frontend.peminjaman.index');
     
-    // Route untuk export peminjaman
-    Route::get('/frontend/peminjaman/export/{format?}', function ($format = 'pdf') {
-        try {
-            // Logika untuk export peminjaman
-            if ($format == 'excel') {
-                // Logika export ke Excel
-                return redirect()->back()->with('success', 'Data peminjaman berhasil diexport ke Excel');
-            } else {
-                // Default export ke PDF
-                return redirect()->back()->with('success', 'Data peminjaman berhasil diexport ke PDF');
-            }
-        } catch (\Exception $e) {
-            return redirect()->back()->with('error', 'Gagal export data: ' . $e->getMessage());
-        }
-    })->name('frontend.peminjaman.export');
-    
     // Route untuk tambah peminjaman 
     Route::get('/frontend/peminjaman/create', function () {
         try {
@@ -179,48 +169,51 @@ Route::middleware(['auth'])->group(function () {
     })->name('frontend.peminjaman.create');
     
     // Route untuk simpan peminjaman (POST)
-Route::post('/frontend/peminjaman', function () {
-    try {
-        // Validasi input
-        $validated = request()->validate([
-            'barang_id' => 'required|exists:barangs,id',
-            'jumlah' => 'required|integer|min:1',
-            'tanggal_pinjam' => 'required|date',
-            'tanggal_kembali_rencana' => 'required|date|after_or_equal:tanggal_pinjam', // Pastikan nama kolom ini benar
-            'keperluan' => 'nullable|string'
-        ]);
-        
-        // Generate kode peminjaman
-        $kode = 'PJM-' . date('Ymd') . '-' . str_pad(
-            (Peminjaman::whereDate('created_at', today())->count() + 1), 
-            3, 
-            '0', 
-            STR_PAD_LEFT
-        );
-        
-        // Buat peminjaman baru
-        $peminjaman = new Peminjaman();
-        $peminjaman->user_id = auth::id();
-        $peminjaman->barang_id = $validated['barang_id'];
-        $peminjaman->jumlah = $validated['jumlah'];
-        $peminjaman->tanggal_pinjam = $validated['tanggal_pinjam'];
-        $peminjaman->tanggal_kembali_rencana = $validated['tanggal_kembali_rencana']; // Gunakan kolom yang sudah ada
-        $peminjaman->status = 'pending';
-        $peminjaman->kode_peminjaman = $kode;
-        $peminjaman->keperluan = $validated['keperluan'] ?? null;
-        $peminjaman->save();
-        
-        // Redirect dengan pesan sukses
-        return redirect()
-            ->route('frontend.peminjaman.index')
-            ->with('success', 'Peminjaman berhasil diajukan dan sedang menunggu persetujuan.');
-    } catch (\Exception $e) {
-        // Redirect dengan pesan error
-        return back()
-            ->withInput()
-            ->with('error', 'Gagal mengajukan peminjaman: ' . $e->getMessage());
-    }
-})->name('frontend.peminjaman.store');
+    Route::post('/frontend/peminjaman', function () {
+        try {
+            // Validasi input
+            $validated = request()->validate([
+                'barang_id' => 'required|exists:barangs,id',
+                'jumlah' => 'required|integer|min:1',
+                'tanggal_pinjam' => 'required|date',
+                'tanggal_kembali_rencana' => 'required|date|after_or_equal:tanggal_pinjam', // Pastikan nama kolom ini benar
+                'keperluan' => 'nullable|string'
+            ]);
+            
+            // Generate kode peminjaman
+            $kode = 'PJM-' . date('Ymd') . '-' . str_pad(
+                (Peminjaman::whereDate('created_at', today())->count() + 1), 
+                3, 
+                '0', 
+                STR_PAD_LEFT
+            );
+            
+            // Buat peminjaman baru
+            $peminjaman = new Peminjaman();
+            $peminjaman->user_id = auth::id();
+            $peminjaman->barang_id = $validated['barang_id'];
+            $peminjaman->jumlah = $validated['jumlah'];
+            $peminjaman->tanggal_pinjam = $validated['tanggal_pinjam'];
+            $peminjaman->tanggal_kembali_rencana = $validated['tanggal_kembali_rencana']; // Gunakan kolom yang sudah ada
+            $peminjaman->status = 'pending';
+            $peminjaman->kode_peminjaman = $kode;
+            $peminjaman->keperluan = $validated['keperluan'] ?? null;
+            $peminjaman->save();
+            
+            // Redirect dengan pesan sukses
+            return redirect()
+                ->route('frontend.peminjaman.index')
+                ->with('success', 'Peminjaman berhasil diajukan dan sedang menunggu persetujuan.');
+        } catch (\Exception $e) {
+            // Redirect dengan pesan error
+            return back()
+                ->withInput()
+                ->with('error', 'Gagal mengajukan peminjaman: ' . $e->getMessage());
+        }
+    })->name('frontend.peminjaman.store');
+
+    // Route untuk daftar peminjaman
+    Route::get('/frontend/peminjaman', [PeminjamanController::class, 'index'])->name('frontend.peminjaman.index');
     
     // Route untuk detail peminjaman
     Route::get('/frontend/peminjaman/{id}', function ($id) {
@@ -241,13 +234,6 @@ Route::middleware('auth')->group(function () {
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
-});
-
-// Admin Export Routes
-Route::middleware(['auth'])->prefix('admin/export')->name('admin.export.')->group(function () {
-    Route::get('/barang/{format?}', [ExportController::class, 'exportBarang'])->name('barang');
-    Route::get('/peminjaman/{format?}', [ExportController::class, 'exportPeminjaman'])->name('peminjaman');
-    Route::get('/laporan/{format?}', [ExportController::class, 'exportLaporanLengkap'])->name('laporan');
 });
 
 require __DIR__.'/auth.php';
