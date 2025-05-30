@@ -167,9 +167,11 @@ Buka browser dan akses:
 
 ```
 http://localhost:8000/admin
+Email : admin@gmail.com
+Password : admin123
 ```
 
-Jika belum ada akun admin, buat terlebih dahulu dengan perintah:
+Jika ingin bikin akun admin sendiri, buat terlebih dahulu dengan perintah:
 
 ```bash
 php artisan make:filament-user
