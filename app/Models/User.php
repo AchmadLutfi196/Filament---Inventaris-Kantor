@@ -5,6 +5,7 @@ namespace App\Models;
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Filament\Models\Contracts\FilamentUser;
@@ -120,5 +121,56 @@ class User extends Authenticatable implements FilamentUser
     public function scopeActive($query)
     {
         return $query->where('is_active', true);
+    }
+    
+    /**
+     * Chat relationships
+     */
+    public function chats(): BelongsToMany
+    {
+        return $this->belongsToMany(Chat::class)
+            ->withPivot(['joined_at', 'last_read_at'])
+            ->withTimestamps();
+    }
+
+    public function chatMessages(): HasMany
+    {
+        return $this->hasMany(ChatMessage::class);
+    }
+
+    /**
+     * Get or create chat between user and admin
+     */
+    public function getOrCreateChatWithAdmin(): Chat
+    {
+        // Find existing chat with admin
+        $existingChat = $this->chats()
+            ->whereHas('users', function ($query) {
+                $query->where('role', self::ROLE_ADMIN);
+            })
+            ->where('type', 'admin_user')
+            ->first();
+
+        if ($existingChat) {
+            return $existingChat;
+        }
+
+        // Create new chat
+        $chat = Chat::create([
+            'title' => 'Chat dengan Admin - ' . $this->name,
+            'type' => 'admin_user',
+            'is_active' => true
+        ]);
+
+        // Add user to chat
+        $chat->users()->attach($this->id, ['joined_at' => now()]);
+        
+        // Add admin to chat
+        $admin = User::where('role', self::ROLE_ADMIN)->first();
+        if ($admin) {
+            $chat->users()->attach($admin->id, ['joined_at' => now()]);
+        }
+
+        return $chat;
     }
 }

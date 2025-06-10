@@ -10,9 +10,14 @@
     <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.bunny.net">
     <link href="https://fonts.bunny.net/css?family=figtree:400,500,600&display=swap" rel="stylesheet" />
+    
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 
     <!-- Scripts -->
     @vite(['resources/css/app.css', 'resources/js/app.js'])
+    
+    @stack('styles')
 </head>
 <body class="font-sans antialiased bg-gray-50">
     <!-- Navigation -->
@@ -41,6 +46,13 @@
                         <a href="{{ route('frontend.peminjaman.index') }}" 
                            class="inline-flex items-center px-1 pt-1 border-b-2 {{ request()->routeIs('frontend.peminjaman.*') ? 'border-blue-500 text-gray-900' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300' }} text-sm font-medium">
                             Peminjaman Saya
+                        </a>
+                        <a href="{{ route('frontend.chat.index') }}" 
+                           class="inline-flex items-center px-1 pt-1 border-b-2 {{ request()->routeIs('frontend.chat.*') ? 'border-blue-500 text-gray-900' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300' }} text-sm font-medium">
+                            <svg class="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                                <path d="M18 10c0 3.866-3.582 7-8 7a8.841 8.841 0 01-4.083-.98L2 17l1.338-3.123C2.493 12.767 2 11.434 2 10c0-3.866 3.582-7 8-7s8 3.134 8 7zM7 9H5v2h2V9zm8 0h-2v2h2V9zM9 9h2v2H9V9z"/>
+                            </svg>
+                            Chat
                         </a>
                         @endauth
                     </div>

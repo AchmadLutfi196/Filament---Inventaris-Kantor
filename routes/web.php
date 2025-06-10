@@ -5,6 +5,7 @@ use App\Http\Controllers\Frontend\DashboardController;
 use App\Http\Controllers\Frontend\BarangController;
 use App\Http\Controllers\Frontend\PeminjamanController;
 use App\Http\Controllers\Frontend\HomeController;
+use App\Http\Controllers\Frontend\ChatController;
 use App\Http\Controllers\Auth\AuthenticatedSessionController;
 use App\Http\Controllers\Auth\RegisteredUserController;
 use Illuminate\Support\Facades\Route;
@@ -34,6 +35,9 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/frontend/peminjaman/create', [PeminjamanController::class, 'create'])->name('frontend.peminjaman.create');
     Route::post('/frontend/peminjaman', [PeminjamanController::class, 'store'])->name('frontend.peminjaman.store');
     Route::get('/frontend/peminjaman/{id}', [PeminjamanController::class, 'show'])->name('frontend.peminjaman.show');
+    
+    // Chat Routes
+    Route::get('/frontend/chat', [ChatController::class, 'index'])->name('frontend.chat.index');
 });
 
 // Uncomment jika perlu
