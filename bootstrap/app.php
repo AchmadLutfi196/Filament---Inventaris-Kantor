@@ -15,6 +15,12 @@ return Application::configure(basePath: dirname(__DIR__))
         // Tambahkan alias middleware di sini
         $middleware->alias([
             'role' => \App\Http\Middleware\CheckUserRole::class,
+            'domain' => \App\Http\Middleware\DomainMiddleware::class,
+        ]);
+        
+        // Add global middleware for domain handling
+        $middleware->web(append: [
+            \App\Http\Middleware\DomainMiddleware::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions) {

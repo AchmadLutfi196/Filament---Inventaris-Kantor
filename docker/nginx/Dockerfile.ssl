@@ -1,0 +1,19 @@
+# Dockerfile untuk SSL certificate generation
+FROM alpine:latest
+
+RUN apk add --no-cache openssl
+
+WORKDIR /ssl
+
+# Generate SSL certificates for both domains
+RUN mkdir -p /ssl && \
+    openssl req -x509 -nodes -days 365 -newkey rsa:2048 \
+    -keyout /ssl/user.key \
+    -out /ssl/user.crt \
+    -subj "/C=ID/ST=Jakarta/L=Jakarta/O=Inventaris/CN=user.inventaris.local" && \
+    openssl req -x509 -nodes -days 365 -newkey rsa:2048 \
+    -keyout /ssl/admin.key \
+    -out /ssl/admin.crt \
+    -subj "/C=ID/ST=Jakarta/L=Jakarta/O=Inventaris/CN=admin.inventaris.local"
+
+VOLUME ["/ssl"]
