@@ -1,9 +1,9 @@
 <?php
 
 use App\Http\Controllers\Frontend\DashboardController;
-use app\Http\Controllers\Api\BarangController;
+use App\Http\Controllers\Frontend\BarangController;
 use App\Http\Controllers\Frontend\PeminjamanController;
-use App\Http\Controllers\Frontend\ExportController;
+use App\Http\Controllers\Frontend\ChatController;
 use Illuminate\Support\Facades\Route;
 
 // Public routes
@@ -17,7 +17,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/peminjaman/create', [PeminjamanController::class, 'create'])->name('peminjaman.create');
     Route::post('/peminjaman', [PeminjamanController::class, 'store'])->name('peminjaman.store');
     Route::get('/peminjaman/{peminjaman}', [PeminjamanController::class, 'show'])->name('peminjaman.show');
-    Route::get('/peminjaman/export/{format?}', [ExportController::class, 'exportPeminjaman'])->name('peminjaman.export');
+    
+    // Chat routes - Remove this since it's defined in web.php
+    // Route::get('/chat', [ChatController::class, 'index'])->name('chat.index');
 });
 
 // Include auth routes

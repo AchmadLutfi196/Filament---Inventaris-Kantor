@@ -1,0 +1,53 @@
+# Laravel specific files
+.env
+.env.*
+!.env.example
+!.env.docker
+
+# Dependencies
+/vendor/
+/node_modules/
+
+# Compiled assets
+/public/hot
+/public/storage
+/public/build
+
+# Storage
+/storage/*.key
+/storage/logs/
+/storage/framework/cache/
+/storage/framework/sessions/
+/storage/framework/testing/
+/storage/framework/views/
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Testing
+.phpunit.result.cache
+.phpunit.cache
+
+# Documentation (for smaller builds)
+*.md
+!README.md
+!DOCKER_MULTI_DOMAIN_SETUP.md
+
+# Scripts
+*.bat
+*.ps1
+!setup-docker.bat
+!start-docker.bat
+!stop-docker.bat
+
+# Git
+.git/
+.gitignore
+.gitattributes

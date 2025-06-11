@@ -3,8 +3,9 @@
 ![Laravel](https://img.shields.io/badge/Laravel-FF2D20?style=for-the-badge&logo=laravel&logoColor=white)
 ![PHP](https://img.shields.io/badge/PHP-777BB4?style=for-the-badge&logo=php&logoColor=white)
 ![MySQL](https://img.shields.io/badge/MySQL-005C84?style=for-the-badge&logo=mysql&logoColor=white)
+![Docker](https://img.shields.io/badge/Docker-2496ED?style=for-the-badge&logo=docker&logoColor=white)
 
-Aplikasi manajemen inventaris kantor berbasis web yang dibangun menggunakan Laravel dan Filament Admin Panel.
+Aplikasi manajemen inventaris kantor berbasis web yang dibangun menggunakan Laravel dan Filament Admin Panel dengan arsitektur multi-domain.
 
 ## 📝 Deskripsi
 
@@ -14,16 +15,76 @@ Aplikasi ini dikembangkan untuk membantu pengelolaan barang inventaris kantor, t
 - 🔄 Pengembalian barang
 - 🏷️ Pengelolaan kategori barang
 - 👥 Manajemen pengguna dengan berbagai peran
+- 💬 Sistem chat real-time antara user dan admin
+
+## 🏗️ Arsitektur Multi-Domain
+
+Aplikasi ini menggunakan arsitektur multi-domain untuk memisahkan antarmuka user dan admin:
+
+- **User Domain:** `user.inventaris.local` - Frontend untuk pengguna
+- **Admin Domain:** `admin.inventaris.local:8080` - Panel admin untuk administrator
 
 ## ⚙️ Persyaratan Sistem
 
+### Untuk Instalasi Docker (Recommended)
+- Docker Desktop
+- PowerShell (Windows)
+- 4GB RAM minimum
+- 10GB storage space
+
+### Untuk Instalasi Manual
 - PHP 8.2 atau lebih baru
 - Composer
 - Node.js dan NPM
 - MySQL (database yang digunakan dalam proyek ini)
 - Web server (Apache atau Nginx)
 
-## 🚀 Cara Instalasi
+## 🐳 Instalasi dengan Docker (Recommended)
+
+### 1. Clone Repositori
+
+```bash
+git clone https://github.com/Hritss28/Filament---Inventaris-Kantor.git inventaris-kantor
+cd inventaris-kantor
+```
+
+### 2. Setup Multi-Domain Environment
+
+```bat
+# Run setup script (akan menghandle semua konfigurasi)
+setup-docker.bat
+```
+
+### 3. Tambahkan Hosts Entries (Administrator Required)
+
+```powershell
+# Jalankan PowerShell sebagai Administrator
+PowerShell -ExecutionPolicy Bypass -File add-hosts.ps1
+```
+
+### 4. Akses Aplikasi
+
+- **User Frontend:** http://user.inventaris.local
+- **Admin Panel:** http://admin.inventaris.local:8080
+
+### 5. Management Commands
+
+```bat
+# Start services
+start-docker.bat
+
+# Stop services
+stop-docker.bat
+
+# View logs
+docker-compose logs -f
+
+# Rebuild containers
+docker-compose build --no-cache
+docker-compose up -d --force-recreate
+```
+
+## 🔧 Instalasi Manual
 
 ### 1. Clone Repositori
 
@@ -47,7 +108,7 @@ php artisan key:generate
 
 ### 4. Edit file .env
 
-Hapus isi env dan ganti ke isi yang saya kasih di bawah ini, pengaturan pada file `.env`. :
+Hapus isi env dan ganti ke isi yang saya kasih di bawah ini, pengaturan pada file `.env`:
 
 ```
 APP_NAME=Laravel
