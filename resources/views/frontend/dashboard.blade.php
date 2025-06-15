@@ -6,8 +6,8 @@
 <div class="max-w-7xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
     <!-- Header -->
     <div class="mb-8">
-        <h1 class="text-3xl font-bold text-gray-900">Dashboard Inventaris</h1>
-        <p class="mt-2 text-gray-600">Selamat datang di sistem inventaris barang kantor</p>
+        <h1 class="text-3xl font-bold text-gray-900">Dashboard Event Organizer</h1>
+        <p class="mt-2 text-gray-600">Selamat datang di sistem Event Organizer</p>
     </div>
 
     <!-- Stats Grid -->

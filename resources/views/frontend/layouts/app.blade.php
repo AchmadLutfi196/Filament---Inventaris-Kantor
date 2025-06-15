@@ -28,7 +28,7 @@
                     <!-- Logo -->
                     <div class="shrink-0 flex items-center">
                         <a href="{{ route('frontend.dashboard') }}" class="text-xl font-bold text-blue-600">
-                            📦 Inventaris Kantor
+                            📦 Event Organizer
                         </a>
                     </div>
 

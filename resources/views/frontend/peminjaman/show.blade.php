@@ -162,13 +162,13 @@
         </div>
 
         <!-- Sidebar -->
-        <div class="space-y-6">
+        <div class="space-y-6" style="height: 350px;">
             <!-- Status Timeline -->
-            <div class="bg-white shadow rounded-lg">
+            <div class="bg-white shadow rounded-lg h-full">
                 <div class="px-6 py-4 border-b border-gray-200">
                     <h3 class="text-lg leading-6 font-medium text-gray-900">Status Timeline</h3>
                 </div>
-                <div class="px-6 py-4">
+                <div class="px-6 py-4 flex ">
                     <div class="flow-root">
                         <ul class="-mb-8">
                             <!-- Submitted -->

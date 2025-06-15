@@ -39,7 +39,6 @@ class DashboardController extends Controller
                 'riwayatPeminjaman'
             ));
         } catch (\Exception $e) {
-            // Tampilkan dashboard dengan data dummy jika terjadi error
             return view('frontend.dashboard', [
                 'totalBarang' => 0,
                 'totalKategori' => 0,
