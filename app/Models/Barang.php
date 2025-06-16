@@ -20,6 +20,8 @@ class Barang extends Model
         'kategori_id',
         'deskripsi',
         'stok',
+        'harga_sewa_per_hari',
+        'biaya_deposit',
         'kondisi',
         'lokasi',
         'foto',
@@ -28,7 +30,9 @@ class Barang extends Model
 
     protected $casts = [
         'tersedia' => 'boolean',
-        'stok' => 'integer'
+        'stok' => 'integer',
+        'harga_sewa_per_hari' => 'decimal:2',
+        'biaya_deposit' => 'decimal:2'
     ];
 
     /**
@@ -97,6 +101,22 @@ class Barang extends Model
             'Tersedia' => 'green',
             default => 'gray'
         };
+    }
+
+    /**
+     * Accessor untuk format harga
+     */
+    public function getFormattedHargaSewaAttribute(): string
+    {
+        return 'Rp ' . number_format($this->harga_sewa_per_hari, 0, ',', '.');
+    }
+
+    /**
+     * Accessor untuk format deposit
+     */
+    public function getFormattedDepositAttribute(): string
+    {
+        return 'Rp ' . number_format($this->biaya_deposit, 0, ',', '.');
     }
 
     /**

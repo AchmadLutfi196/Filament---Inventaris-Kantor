@@ -10,8 +10,31 @@
         <p class="mt-2 text-gray-600">Isi formulir berikut untuk mengajukan peminjaman barang</p>
     </div>
 
-    <form method="POST" action="{{ route('frontend.peminjaman.store') }}" class="space-y-6">
+    <form method="POST" action="{{ route('frontend.peminjaman.store') }}" class="space-y-6" id="peminjaman-form">
         @csrf
+
+        <!-- Error Messages -->
+        @if ($errors->any())
+            <div class="bg-red-50 border border-red-200 rounded-md p-4">
+                <div class="flex">
+                    <div class="flex-shrink-0">
+                        <svg class="h-5 w-5 text-red-400" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"></path>
+                        </svg>
+                    </div>
+                    <div class="ml-3">
+                        <h3 class="text-sm font-medium text-red-800">Terdapat kesalahan pada formulir:</h3>
+                        <div class="mt-2 text-sm text-red-700">
+                            <ul class="list-disc pl-5 space-y-1">
+                                @foreach ($errors->all() as $error)
+                                    <li>{{ $error }}</li>
+                                @endforeach
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        @endif
 
         <!-- Pilih Barang -->
         <div class="bg-white shadow rounded-lg">
@@ -21,7 +44,7 @@
             <div class="px-6 py-4">
                 @if($barang)
                     <!-- Barang sudah dipilih -->
-                    <input type="hidden" name="barang_id" value="{{ $barang->id }}">
+                    <input type="hidden" name="barang_id" value="{{ $barang->id }}" id="barang_id">
                     <div class="border border-gray-200 rounded-lg p-4 bg-blue-50">
                         <div class="flex items-center space-x-4">
                             @if($barang->foto)
@@ -29,28 +52,30 @@
                             @else
                                 <div class="w-16 h-16 bg-gray-200 rounded-lg flex items-center justify-center">
                                     <svg class="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"></path>
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
                                     </svg>
                                 </div>
                             @endif
                             <div class="flex-1">
                                 <h4 class="text-lg font-semibold text-gray-900">{{ $barang->nama }}</h4>
-                                <p class="text-sm text-gray-600">{{ $barang->kode_barang }} - {{ $barang->kategori->nama }}</p>
-                                <p class="text-sm text-gray-600">Lokasi: {{ $barang->lokasi }}</p>
-                                <p class="text-sm font-medium text-green-600">Stok Tersedia: {{ $barang->stok_tersedia }} unit</p>
+                                <p class="text-sm text-gray-600">{{ $barang->kode_barang }}</p>
+                                <p class="text-sm text-gray-600">Stok tersedia: {{ $barang->stok_tersedia }} unit</p>
+                                @if($barang->harga_sewa_per_hari && $barang->biaya_deposit)
+                                <div class="mt-2 flex space-x-4">
+                                    <span class="text-sm font-medium text-green-600">{{ $barang->formatted_harga_sewa }}/hari</span>
+                                    <span class="text-sm font-medium text-blue-600">Deposit: {{ $barang->formatted_deposit }}</span>
+                                </div>
+                                @endif
                             </div>
-                            <a href="{{ route('frontend.barang.index') }}" class="text-blue-600 hover:text-blue-800 text-sm">
-                                Ganti Barang
-                            </a>
                         </div>
                     </div>
                 @else
-                    <!-- Pilih Barang  -->
-                    <div class="bg-blue-50 border border-blue-200 rounded-lg p-6 text-center">
-                        <svg class="mx-auto h-12 w-12 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                    <!-- Belum memilih barang -->
+                    <div class="text-center py-12">
+                        <svg class="mx-auto h-12 w-12 text-gray-400" stroke="currentColor" fill="none" viewBox="0 0 48 48">
+                            <path d="M34 40h10v-4a6 6 0 00-10.712-3.714M34 40H14m20 0v-4a9.971 9.971 0 00-.712-3.714M14 40H4v-4a6 6 0 0110.713-3.714M14 40v-4c0-1.313.253-2.566.713-3.714m0 0A9.971 9.971 0 0118 28c2.624 0 4.991 1.013 6.713 2.686"></path>
                         </svg>
-                        <h3 class="mt-2 text-lg font-medium text-gray-900">Barang Belum Dipilih</h3>
+                        <h3 class="mt-2 text-sm font-medium text-gray-900">Belum ada barang dipilih</h3>
                         <p class="mt-1 text-sm text-gray-600">
                             Anda harus memilih barang yang akan dipinjam terlebih dahulu sebelum melanjutkan.
                         </p>
@@ -62,7 +87,7 @@
                                 Lihat Daftar Barang
                             </a>
                         </div>
-                        <input type="hidden" name="barang_id" id="selected_barang_id" value="{{ old('barang_id') }}">
+                        <input type="hidden" name="barang_id" id="barang_id" value="{{ old('barang_id') }}">
                         @error('barang_id')
                             <p class="mt-2 text-sm text-red-600">{{ $message }}</p>
                         @enderror
@@ -71,6 +96,7 @@
             </div>
         </div>
 
+        @if($barang)
         <!-- Detail Peminjaman -->
         <div class="bg-white shadow rounded-lg">
             <div class="px-6 py-4 border-b border-gray-200">
@@ -79,19 +105,16 @@
             <div class="px-6 py-4 space-y-4">
                 <!-- Jumlah -->
                 <div>
-                    <label for="jumlah" class="block text-sm font-medium text-gray-700">Jumlah yang Dipinjam</label>
-                    <input type="number" name="jumlah" id="jumlah" min="1" max="{{ $barang ? $barang->stok_tersedia : '' }}" value="{{ old('jumlah', 1) }}" 
+                    <label for="jumlah" class="block text-sm font-medium text-gray-700">Jumlah</label>
+                    <input type="number" name="jumlah" id="jumlah" value="{{ old('jumlah', 1) }}" 
+                           min="1" max="{{ $barang->stok_tersedia }}"
                            class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500">
+                    <p class="text-sm text-gray-500 mt-1">
+                        Maksimal {{ $barang->stok_tersedia }} unit
+                    </p>
                     @error('jumlah')
                         <p class="text-red-600 text-sm mt-1">{{ $message }}</p>
                     @enderror
-                    <p class="text-sm text-gray-500 mt-1">
-                        @if($barang)
-                            Maksimal {{ $barang->stok_tersedia }} unit
-                        @else
-                            Sesuaikan dengan stok yang tersedia
-                        @endif
-                    </p>
                 </div>
 
                 <!-- Tanggal Pinjam -->
@@ -100,204 +123,217 @@
                     <input type="date" name="tanggal_pinjam" id="tanggal_pinjam" value="{{ old('tanggal_pinjam', date('Y-m-d')) }}" 
                            min="{{ date('Y-m-d') }}"
                            class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500">
-                    @error('tanggal_pinjam')
+                    {{-- @error('tanggal_pinjam')
                         <p class="text-red-600 text-sm mt-1">{{ $message }}</p>
-                    @enderror
+                    @enderror --}}
                 </div>
 
                 <!-- Tanggal Kembali -->
                 <div>
-                    <label for="tanggal_kembali_rencana" class="block text-sm font-medium text-gray-700">Tanggal Rencana Kembali</label>
-                    <input type="date" name="tanggal_kembali_rencana" id="tanggal_kembali_rencana" 
-                           value="{{ old('tanggal_kembali_rencana', date('Y-m-d', strtotime('+7 days'))) }}" 
-                           min="{{ date('Y-m-d', strtotime('+1 day')) }}"
+                    <label for="tanggal_kembali_rencana" class="block text-sm font-medium text-gray-700">Tanggal Kembali</label>
+                    <input type="date" name="tanggal_kembali_rencana" id="tanggal_kembali_rencana" value="{{ old('tanggal_kembali_rencana') }}"
                            class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500">
-                    @error('tanggal_kembali_rencana')
+                    {{-- @error('tanggal_kembali_rencana')
                         <p class="text-red-600 text-sm mt-1">{{ $message }}</p>
-                    @enderror
-                    <p class="text-sm text-gray-500 mt-1" id="durasi_info">Durasi: 7 hari</p>
+                    @enderror --}}
                 </div>
 
                 <!-- Keperluan -->
                 <div>
-                    <label for="keperluan" class="block text-sm font-medium text-gray-700">Keperluan/Tujuan Peminjaman</label>
-                    <textarea name="keperluan" id="keperluan" rows="4" placeholder="Jelaskan untuk apa barang ini akan digunakan..." 
-                              class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500">{{ old('keperluan') }}</textarea>
-                    @error('keperluan')
+                    <label for="keperluan" class="block text-sm font-medium text-gray-700">Keperluan</label>
+                    <textarea name="keperluan" id="keperluan" rows="3" 
+                               class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
+                               placeholder="Jelaskan keperluan peminjaman...">{{ old('keperluan') }}</textarea>
+                    {{-- @error('keperluan')
                         <p class="text-red-600 text-sm mt-1">{{ $message }}</p>
-                    @enderror
-                    <p class="text-sm text-gray-500 mt-1">Maksimal 500 karakter</p>
+                    @enderror --}}
                 </div>
             </div>
         </div>
 
-        <!-- Terms & Conditions -->
+        <!-- Ringkasan Biaya -->
+        <div class="bg-white shadow rounded-lg" id="ringkasan-biaya" style="display: none;">
+            <div class="px-6 py-4 border-b border-gray-200">
+                <h3 class="text-lg leading-6 font-medium text-gray-900">Ringkasan Biaya</h3>
+            </div>
+            <div class="px-6 py-4">
+                <div class="space-y-3">
+                    <div class="flex justify-between">
+                        <span class="text-sm text-gray-600">Jumlah Hari:</span>
+                        <span class="text-sm font-medium" id="display-jumlah-hari">-</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span class="text-sm text-gray-600">Biaya Sewa:</span>
+                        <span class="text-sm font-medium" id="display-biaya-sewa">-</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span class="text-sm text-gray-600">Deposit:</span>
+                        <span class="text-sm font-medium" id="display-biaya-deposit">-</span>
+                    </div>
+                    <hr class="my-3">
+                    <div class="flex justify-between">
+                        <span class="text-base font-semibold text-gray-900">Total Pembayaran:</span>
+                        <span class="text-base font-bold text-blue-600" id="display-total-biaya">-</span>
+                    </div>
+                </div>
+                <div class="mt-4 p-3 bg-yellow-50 rounded-md">
+                    <p class="text-sm text-yellow-800">
+                        <strong>Catatan:</strong> Deposit akan dikembalikan setelah barang dikembalikan dalam kondisi baik.
+                        Denda keterlambatan 5% per hari dari total biaya sewa.
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tombol Submit -->
         <div class="bg-white shadow rounded-lg">
             <div class="px-6 py-4">
-                <div class="flex items-start">
-                    <div class="flex items-center h-5">
-                        <input id="terms" name="terms" type="checkbox" required 
-                               class="focus:ring-blue-500 h-4 w-4 text-blue-600 border-gray-300 rounded">
-                    </div>
-                    <div class="ml-3 text-sm">
-                        <label for="terms" class="font-medium text-gray-700">Saya setuju dengan syarat dan ketentuan</label>
-                        <ul class="mt-2 text-gray-600 space-y-1">
-                            <li>• Bertanggung jawab atas barang yang dipinjam</li>
-                            <li>• Mengembalikan barang sesuai jadwal yang ditentukan</li>
-                            <li>• Mengganti jika barang hilang atau rusak</li>
-                            <li>• Menggunakan barang sesuai keperluan yang disebutkan</li>
-                        </ul>
-                    </div>
-                </div>
+                <button type="submit" 
+                        class="w-full flex justify-center py-3 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                        id="submit-button" disabled>
+                    <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 0h10a2 2 0 002-2v-3a2 2 0 00-2-2H9a2 2 0 00-2 2v3a2 2 0 002 2z"></path>
+                    </svg>
+                    Ajukan Peminjaman & Bayar
+                </button>
             </div>
         </div>
-
-        <!-- Action Buttons -->
-        <div class="flex justify-end space-x-4">
-            <a href="{{ route('frontend.barang.index') }}" 
-               class="bg-gray-300 text-gray-700 px-6 py-2 rounded-md hover:bg-gray-400 focus:ring-2 focus:ring-gray-500">
-                Batal
-            </a>
-            <button type="submit" 
-                    class="bg-blue-600 text-white px-6 py-2 rounded-md hover:bg-blue-700 focus:ring-2 focus:ring-blue-500">
-                Ajukan Peminjaman
-            </button>
-        </div>
+        @endif
     </form>
 </div>
 
 <script>
-// Auto calculate duration
 document.addEventListener('DOMContentLoaded', function() {
-    console.log('DOM loaded - Inisialisasi aplikasi peminjaman'); // Debug info
-    
+    const form = document.getElementById('peminjaman-form');
+    const barangId = document.getElementById('barang_id');
+    const jumlah = document.getElementById('jumlah');
     const tanggalPinjam = document.getElementById('tanggal_pinjam');
     const tanggalKembali = document.getElementById('tanggal_kembali_rencana');
-    const durasiInfo = document.getElementById('durasi_info');
-    
-    // Ambil elemen form
-    const form = document.querySelector('form');
-    
-    // Validasi form saat submit
-    if (form) {
-        form.addEventListener('submit', function(event) {
-            // Validasi jumlah
-            const jumlahInput = document.getElementById('jumlah');
-            if (jumlahInput) {
-                const max = parseInt(jumlahInput.getAttribute('max') || 0);
-                const value = parseInt(jumlahInput.value || 0);
-                
-                console.log('Validasi jumlah:', { max, value }); // Debug info
-                
-                // Validasi jumlah tidak melebihi stok
-                if (max > 0 && value > max) {
-                    event.preventDefault(); // Mencegah form terkirim
-                    alert(`Jumlah maksimal yang dapat dipinjam adalah ${max} unit`);
-                    jumlahInput.value = max;
-                    jumlahInput.focus();
-                    return false;
-                }
-                
-                // Validasi jumlah minimal
-                if (value < 1) {
-                    event.preventDefault(); // Mencegah form terkirim
-                    alert('Jumlah minimal peminjaman adalah 1 unit');
-                    jumlahInput.value = 1;
-                    jumlahInput.focus();
-                    return false;
-                }
-            }
-            
-            // Jika validasi berhasil, disable tombol submit untuk mencegah double-submit
-            if (this.checkValidity()) {
-                const submitButton = this.querySelector('button[type="submit"]');
-                if (submitButton) {
-                    submitButton.disabled = true;
-                    submitButton.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Memproses...';
-                }
+    const ringkasanBiaya = document.getElementById('ringkasan-biaya');
+    const submitButton = document.getElementById('submit-button');
+
+    console.log('Script loaded');
+
+    // Update minimum tanggal kembali saat tanggal pinjam berubah
+    if (tanggalPinjam) {
+        tanggalPinjam.addEventListener('change', function() {
+            if (tanggalKembali) {
+                tanggalKembali.min = this.value;
+                updateRingkasanBiaya();
             }
         });
     }
 
-    // Validasi input jumlah
-    const jumlahInput = document.getElementById('jumlah');
-    if (jumlahInput) {
-        // Validasi saat nilai berubah (input)
-        jumlahInput.addEventListener('input', function() {
-            validateJumlah(this);
-        });
-        
-        // Validasi saat keluar dari field (blur)
-        jumlahInput.addEventListener('blur', function() {
-            validateJumlah(this);
-        });
-        
-        // Validasi saat nilai diubah (change)
-        jumlahInput.addEventListener('change', function() {
-            validateJumlah(this);
-        });
-        
-        // Pastikan hanya angka yang diinput
-        jumlahInput.addEventListener('keypress', function(e) {
-            const charCode = e.which ? e.which : e.keyCode;
-            if (charCode > 31 && (charCode < 48 || charCode > 57)) {
-                e.preventDefault();
-                return false;
-            }
-            return true;
-        });
-    }
-
-    // Fungsi validasi jumlah
-    function validateJumlah(input) {
-        const max = parseInt(input.getAttribute('max') || 0);
-        const value = parseInt(input.value || 0);
-        
-        console.log('Validasi jumlah input:', { max, value }); // Debug info
-        
-        if (max > 0 && value > max) {
-            input.value = max;
-            alert(`Jumlah maksimal yang dapat dipinjam adalah ${max} unit`);
-            return false;
+    // Event listeners untuk update ringkasan biaya
+    [jumlah, tanggalPinjam, tanggalKembali].forEach(element => {
+        if (element) {
+            element.addEventListener('change', updateRingkasanBiaya);
+            element.addEventListener('input', updateRingkasanBiaya);
         }
-        
-        if (value < 1 && input.value !== '') {
-            input.value = 1;
-            return false;
-        }
-        
-        return true;
-    }
-
-    function updateDurasi() {
-        if (tanggalPinjam.value && tanggalKembali.value) {
-            const start = new Date(tanggalPinjam.value);
-            const end = new Date(tanggalKembali.value);
-            const diffTime = Math.abs(end - start);
-            const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-            durasiInfo.textContent = `Durasi: ${diffDays} hari`;
-        }
-    }
-
-    // Update minimum date for return when borrow date changes
-    tanggalPinjam.addEventListener('change', function() {
-        const minReturn = new Date(this.value);
-        minReturn.setDate(minReturn.getDate() + 1);
-        tanggalKembali.min = minReturn.toISOString().split('T')[0];
-        
-        // Auto set return date to 7 days later if not set
-        if (!tanggalKembali.value) {
-            const autoReturn = new Date(this.value);
-            autoReturn.setDate(autoReturn.getDate() + 7);
-            tanggalKembali.value = autoReturn.toISOString().split('T')[0];
-        }
-        updateDurasi();
     });
 
-    tanggalKembali.addEventListener('change', updateDurasi);
+    function updateRingkasanBiaya() {
+        console.log('updateRingkasanBiaya called');
+        
+        if (!barangId || !barangId.value || !jumlah || !tanggalPinjam || !tanggalKembali) {
+            console.log('Missing elements');
+            return;
+        }
 
-    // Initial duration calculation
-    updateDurasi();
+        if (!jumlah.value || !tanggalPinjam.value || !tanggalKembali.value) {
+            console.log('Missing values');
+            ringkasanBiaya.style.display = 'none';
+            submitButton.disabled = true;
+            return;
+        }
+
+        console.log('Fetching barang details...');
+        
+        // Simplified route - just use the path
+        const routeUrl = '/frontend/peminjaman/get-barang-details';
+        
+        console.log('Using route URL:', routeUrl);
+        
+        // Fetch detail barang dan hitung biaya
+        fetch(routeUrl, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
+                'Accept': 'application/json'
+            },
+            body: JSON.stringify({
+                barang_id: barangId.value,
+                jumlah: jumlah.value,
+                tanggal_pinjam: tanggalPinjam.value,
+                tanggal_kembali: tanggalKembali.value
+            })
+        })
+        .then(response => {
+            console.log('Response status:', response.status);
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+            }
+            return response.json();
+        })
+        .then(data => {
+            console.log('Response data:', data);
+            
+            if (data.error) {
+                console.log('Error in response:', data.error);
+                alert('Error: ' + data.error);
+                ringkasanBiaya.style.display = 'none';
+                submitButton.disabled = true;
+                return;
+            }
+
+            // Update display
+            document.getElementById('display-jumlah-hari').textContent = data.perhitungan.jumlah_hari + ' hari';
+            document.getElementById('display-biaya-sewa').textContent = data.perhitungan.formatted_biaya_sewa;
+            document.getElementById('display-biaya-deposit').textContent = data.perhitungan.formatted_biaya_deposit;
+            document.getElementById('display-total-biaya').textContent = data.perhitungan.formatted_total;
+
+            ringkasanBiaya.style.display = 'block';
+            submitButton.disabled = false;
+        })
+        .catch(error => {
+            console.error('Fetch error:', error);
+            alert('Network error: ' + error.message);
+            ringkasanBiaya.style.display = 'none';
+            submitButton.disabled = true;
+        });
+    }
+
+    // Validasi form sebelum submit
+    if (form) {
+        form.addEventListener('submit', function(event) {
+            console.log('Form submitted');
+            
+            if (jumlah) {
+                const max = parseInt(jumlah.getAttribute('max') || 0);
+                const value = parseInt(jumlah.value || 0);
+                
+                if (max > 0 && value > max) {
+                    event.preventDefault();
+                    alert(`Jumlah maksimal yang dapat dipinjam adalah ${max} unit`);
+                    jumlah.value = max;
+                    jumlah.focus();
+                    return false;
+                }
+                
+                if (value < 1) {
+                    event.preventDefault();
+                    alert('Jumlah minimal peminjaman adalah 1 unit');
+                    jumlah.value = 1;
+                    jumlah.focus();
+                    return false;
+                }
+            }
+        });
+    }
+
+    // Initial check
+    updateRingkasanBiaya();
 });
 </script>
 @endsection

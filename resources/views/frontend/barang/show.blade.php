@@ -58,8 +58,9 @@
                 </span>
             </div>
 
-            <!-- Title & Code -->
-            <h1 class="text-3xl font-extrabold tracking-tight text-gray-900">{{ $barang->nama }}</h1>
+            <!-- Title, Price, & Code -->
+            <h1 class="text-3xl font-extrabold tracking-tight text-gray-900">{{ $barang->nama }}</h1>  
+            <span class="text-xl font-bold text-green-600">Rp {{ number_format($barang->harga_sewa_per_hari, 0, ',', '.') }}</span>
             <p class="text-lg text-gray-500 mt-2">{{ $barang->kode_barang }}</p>
 
             <!-- Availability -->

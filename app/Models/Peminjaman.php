@@ -24,170 +24,169 @@ class Peminjaman extends Model
         'tanggal_kembali_aktual',
         'status',
         'keperluan',
-        'catatan_admin'
+        'catatan_admin',
+        'total_biaya_sewa',
+        'total_deposit',
+        'denda_keterlambatan',
+        'total_pembayaran',
+        'payment_status',
+        'midtrans_order_id',
+        'midtrans_response',
+        'paid_at'
     ];
 
     protected $casts = [
         'tanggal_pinjam' => 'date',
         'tanggal_kembali_rencana' => 'date',
         'tanggal_kembali_aktual' => 'date',
-        'jumlah' => 'integer'
+        'jumlah' => 'integer',
+        'total_biaya_sewa' => 'decimal:2',
+        'total_deposit' => 'decimal:2',
+        'denda_keterlambatan' => 'decimal:2',
+        'total_pembayaran' => 'decimal:2',
+        'midtrans_response' => 'array',
+        'paid_at' => 'datetime'
     ];
 
-    /**
-     * Status yang tersedia
-     */
     const STATUS_PENDING = 'pending';
     const STATUS_DISETUJUI = 'disetujui';
     const STATUS_DITOLAK = 'ditolak';
     const STATUS_DIPINJAM = 'dipinjam';
     const STATUS_DIKEMBALIKAN = 'dikembalikan';
 
-    /**
-     * Relasi dengan User
-     */
+    const PAYMENT_PENDING = 'pending';
+    const PAYMENT_PAID = 'paid';
+    const PAYMENT_FAILED = 'failed';
+
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
     }
 
-    /**
-     * Relasi dengan Barang
-     */
     public function barang(): BelongsTo
     {
         return $this->belongsTo(Barang::class);
     }
 
-    /**
-     * Accessor untuk durasi peminjaman
-     */
-    public function getDurasiAttribute(): int
+    public function getJumlahHariAttribute(): int
     {
-        return $this->tanggal_pinjam->diffInDays($this->tanggal_kembali_rencana);
+        if (!$this->tanggal_pinjam || !$this->tanggal_kembali_rencana) {
+            return 0;
+        }
+        
+        return $this->tanggal_pinjam->diffInDays($this->tanggal_kembali_rencana) + 1;
     }
 
-    /**
-     * Accessor untuk status terlambat
-     */
     public function getTerlambatAttribute(): bool
     {
         if ($this->status !== self::STATUS_DIPINJAM) {
             return false;
         }
         
-        return Carbon::now()->gt($this->tanggal_kembali_rencana);
+        return $this->tanggal_kembali_rencana < Carbon::now()->startOfDay();
     }
 
-    /**
-     * Accessor untuk hari terlambat
-     */
     public function getHariTerlambatAttribute(): int
     {
         if (!$this->terlambat) {
             return 0;
         }
         
-        return Carbon::now()->diffInDays($this->tanggal_kembali_rencana);
+        return $this->tanggal_kembali_rencana->diffInDays(Carbon::now()->startOfDay());
     }
 
-    /**
-     * Accessor untuk warna status
-     */
-    public function getWarnaStatusAttribute(): string
+    public function hitungTotalBiayaSewa(): float
     {
-        return match($this->status) {
-            self::STATUS_PENDING => 'yellow',
-            self::STATUS_DISETUJUI => 'blue',
-            self::STATUS_DITOLAK => 'red',
-            self::STATUS_DIPINJAM => $this->terlambat ? 'red' : 'green',
-            self::STATUS_DIKEMBALIKAN => 'gray',
-            default => 'gray'
-        };
-    }
-
-    /**
-     * Accessor untuk label status
-     */
-    public function getLabelStatusAttribute(): string
-    {
-        $labels = [
-            self::STATUS_PENDING => 'Menunggu Persetujuan',
-            self::STATUS_DISETUJUI => 'Disetujui',
-            self::STATUS_DITOLAK => 'Ditolak',
-            self::STATUS_DIPINJAM => 'Sedang Dipinjam',
-            self::STATUS_DIKEMBALIKAN => 'Dikembalikan'
-        ];
-
-        $label = $labels[$this->status] ?? 'Unknown';
-        
-        if ($this->status === self::STATUS_DIPINJAM && $this->terlambat) {
-            $label .= ' (Terlambat ' . $this->hari_terlambat . ' hari)';
+        if (!$this->barang) {
+            return 0;
         }
         
-        return $label;
+        $jumlahHari = $this->jumlah_hari;
+        $hargaPerHari = $this->barang->harga_sewa_per_hari ?? 0;
+        
+        return $jumlahHari * $hargaPerHari * $this->jumlah;
     }
 
-    /**
-     * Scope untuk status tertentu
-     */
-    public function scopeByStatus(Builder $query, $status): void
+    public function hitungTotalDeposit(): float
     {
-        if ($status) {
-            $query->where('status', $status);
+        if (!$this->barang) {
+            return 0;
         }
+        
+        return ($this->barang->biaya_deposit ?? 0) * $this->jumlah;
     }
 
-    /**
-     * Scope untuk user tertentu
-     */
-    public function scopeByUser(Builder $query, $userId): void
+    public function hitungDendaKeterlambatan(): float
     {
-        if ($userId) {
-            $query->where('user_id', $userId);
+        if (!$this->terlambat) {
+            return 0;
         }
+        
+        $hariTerlambat = $this->hari_terlambat;
+        $totalBiayaSewa = $this->total_biaya_sewa ?: $this->hitungTotalBiayaSewa();
+        
+        return $totalBiayaSewa * 0.05 * $hariTerlambat;
     }
 
-    /**
-     * Scope untuk barang tertentu
-     */
-    public function scopeByBarang(Builder $query, $barangId): void
+    public function hitungTotalPembayaran(): float
     {
-        if ($barangId) {
-            $query->where('barang_id', $barangId);
+        $totalSewa = $this->hitungTotalBiayaSewa();
+        $totalDeposit = $this->hitungTotalDeposit();
+        $denda = $this->hitungDendaKeterlambatan();
+        
+        return $totalSewa + $totalDeposit + $denda;
+    }
+
+    public function updateBiaya(): void
+    {
+        if (!$this->relationLoaded('barang')) {
+            $this->load('barang');
         }
+
+        $totalSewa = $this->hitungTotalBiayaSewa();
+        $totalDeposit = $this->hitungTotalDeposit();
+        $denda = $this->hitungDendaKeterlambatan();
+        $totalPembayaran = $totalSewa + $totalDeposit + $denda;
+
+        $this->update([
+            'total_biaya_sewa' => $totalSewa,
+            'total_deposit' => $totalDeposit,
+            'denda_keterlambatan' => $denda,
+            'total_pembayaran' => $totalPembayaran
+        ]);
     }
 
-    /**
-     * Scope untuk rentang tanggal
-     */
-    public function scopeByDateRange(Builder $query, $startDate, $endDate): void
+    // PERBAIKI ACCESSOR INI - Gunakan nilai database, bukan perhitungan ulang
+    public function getFormattedTotalPembayaranAttribute(): string
     {
-        if ($startDate && $endDate) {
-            $query->whereBetween('tanggal_pinjam', [$startDate, $endDate]);
-        }
+        $total = $this->attributes['total_pembayaran'] ?? 0; // Gunakan nilai database langsung
+        return 'Rp ' . number_format($total, 0, ',', '.');
     }
 
-    /**
-     * Scope untuk peminjaman aktif
-     */
-    public function scopeAktif(Builder $query): void
+    public function getFormattedTotalBiayaSewaAttribute(): string
     {
-        $query->whereIn('status', [self::STATUS_DISETUJUI, self::STATUS_DIPINJAM]);
+        $total = $this->attributes['total_biaya_sewa'] ?? 0; // Gunakan nilai database langsung
+        return 'Rp ' . number_format($total, 0, ',', '.');
     }
 
-    /**
-     * Scope untuk peminjaman terlambat
-     */
+    public function getFormattedTotalDepositAttribute(): string
+    {
+        $total = $this->attributes['total_deposit'] ?? 0; // Gunakan nilai database langsung
+        return 'Rp ' . number_format($total, 0, ',', '.');
+    }
+
+    public function getFormattedDendaKeterlambatanAttribute(): string
+    {
+        $total = $this->attributes['denda_keterlambatan'] ?? 0; // Gunakan nilai database langsung
+        return 'Rp ' . number_format($total, 0, ',', '.');
+    }
+
     public function scopeTerlambat(Builder $query): void
     {
         $query->where('status', self::STATUS_DIPINJAM)
               ->where('tanggal_kembali_rencana', '<', Carbon::now());
     }
 
-    /**
-     * Generate kode peminjaman otomatis
-     */
     public static function generateKodePeminjaman(): string
     {
         $tanggal = Carbon::now()->format('Ymd');
@@ -196,9 +195,6 @@ class Peminjaman extends Model
         return 'PJM-' . $tanggal . '-' . str_pad($count, 3, '0', STR_PAD_LEFT);
     }
 
-    /**
-     * Boot method untuk auto generate kode
-     */
     protected static function boot()
     {
         parent::boot();
@@ -207,6 +203,13 @@ class Peminjaman extends Model
             if (empty($peminjaman->kode_peminjaman)) {
                 $peminjaman->kode_peminjaman = self::generateKodePeminjaman();
             }
+        });
+
+        static::created(function ($peminjaman) {
+            \Log::info('Peminjaman created, updating biaya', ['id' => $peminjaman->id]);
+            
+            $peminjaman->refresh();
+            $peminjaman->updateBiaya();
         });
     }
 }

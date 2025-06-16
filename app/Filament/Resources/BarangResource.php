@@ -10,8 +10,6 @@ use Filament\Forms\Form;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
-use Filament\Tables\Filters\SelectFilter;
-use Filament\Tables\Actions\Action;
 use Illuminate\Database\Eloquent\Builder;
 
 class BarangResource extends Resource
@@ -37,35 +35,28 @@ class BarangResource extends Resource
                         Forms\Components\TextInput::make('nama')
                             ->required()
                             ->maxLength(255)
-                            ->placeholder('Nama barang'),
+                            ->columnSpan(2),
                         
                         Forms\Components\TextInput::make('kode_barang')
+                            ->label('Kode Barang')
                             ->required()
                             ->unique(ignoreRecord: true)
-                            ->placeholder('Contoh: BRG-001')
-                            ->helperText('Kode unik untuk barang'),
+                            ->maxLength(255)
+                            ->placeholder('Contoh: BRG001'),
                         
                         Forms\Components\Select::make('kategori_id')
                             ->label('Kategori')
                             ->relationship('kategori', 'nama')
-                            ->searchable()
-                            ->preload()
                             ->required()
-                            ->createOptionForm([
-                                Forms\Components\TextInput::make('nama')
-                                    ->required(),
-                                Forms\Components\TextInput::make('kode')
-                                    ->required(),
-                                Forms\Components\Textarea::make('deskripsi'),
-                            ]),
+                            ->searchable()
+                            ->preload(),
                         
                         Forms\Components\Textarea::make('deskripsi')
-                            ->maxLength(500)
-                            ->placeholder('Deskripsi barang...')
-                            ->rows(3),
+                            ->rows(3)
+                            ->columnSpan(2),
                     ])->columns(2),
                 
-                Forms\Components\Section::make('Detail Stok & Lokasi')
+                Forms\Components\Section::make('Detail & Harga')
                     ->schema([
                         Forms\Components\TextInput::make('stok')
                             ->required()
@@ -73,6 +64,26 @@ class BarangResource extends Resource
                             ->default(1)
                             ->minValue(0)
                             ->helperText('Jumlah total barang'),
+                        
+                        Forms\Components\TextInput::make('harga_sewa_per_hari')
+                            ->label('Harga Sewa/Hari')
+                            ->required()
+                            ->numeric()
+                            ->prefix('Rp')
+                            ->default(0)
+                            ->minValue(0)
+                            ->step(1000)
+                            ->helperText('Biaya sewa per hari per unit'),
+                        
+                        Forms\Components\TextInput::make('biaya_deposit')
+                            ->label('Biaya Deposit')
+                            ->required()
+                            ->numeric()
+                            ->prefix('Rp')
+                            ->default(0)
+                            ->minValue(0)
+                            ->step(5000)
+                            ->helperText('Deposit yang harus dibayar per unit'),
                         
                         Forms\Components\Select::make('kondisi')
                             ->required()
@@ -95,19 +106,13 @@ class BarangResource extends Resource
                             ->helperText('Matikan jika barang sedang tidak dapat dipinjam'),
                     ])->columns(2),
                 
-                Forms\Components\Section::make('Foto Barang')
+                Forms\Components\Section::make('Foto')
                     ->schema([
                         Forms\Components\FileUpload::make('foto')
                             ->image()
                             ->directory('barang-photos')
-                            ->imageEditor()
-                            ->imageEditorAspectRatios([
-                                '16:9',
-                                '4:3',
-                                '1:1',
-                            ])
                             ->maxSize(2048)
-                            ->helperText('Upload foto barang (max 2MB)'),
+                            ->helperText('Maksimal 2MB, format: JPG, PNG, GIF'),
                     ]),
             ]);
     }
@@ -117,76 +122,68 @@ class BarangResource extends Resource
         return $table
             ->columns([
                 Tables\Columns\ImageColumn::make('foto')
-                    ->label('Foto')
                     ->circular()
                     ->defaultImageUrl(asset('images/no-image.png')),
                 
                 Tables\Columns\TextColumn::make('kode_barang')
                     ->label('Kode')
                     ->searchable()
-                    ->sortable()
-                    ->badge()
-                    ->color('primary'),
+                    ->sortable(),
                 
                 Tables\Columns\TextColumn::make('nama')
-                    ->label('Nama Barang')
                     ->searchable()
-                    ->sortable()
-                    ->wrap(),
+                    ->sortable(),
                 
                 Tables\Columns\TextColumn::make('kategori.nama')
                     ->label('Kategori')
-                    ->badge()
-                    ->color('secondary'),
+                    ->sortable(),
+                
+                Tables\Columns\TextColumn::make('harga_sewa_per_hari')
+                    ->label('Harga/Hari')
+                    ->money('IDR')
+                    ->sortable(),
+                
+                Tables\Columns\TextColumn::make('biaya_deposit')
+                    ->label('Deposit')
+                    ->money('IDR')
+                    ->sortable(),
                 
                 Tables\Columns\TextColumn::make('stok')
-                    ->label('Stok Total')
-                    ->sortable()
-                    ->alignCenter(),
+                    ->alignCenter()
+                    ->sortable(),
                 
                 Tables\Columns\TextColumn::make('stok_tersedia')
-                    ->label('Stok Tersedia')
-                    ->badge()
-                    ->color(fn ($record) => match(true) {
-                        $record->stok_tersedia <= 0 => 'danger',
-                        $record->stok_tersedia <= 2 => 'warning',
-                        default => 'success'
-                    }),
+                    ->label('Tersedia')
+                    ->alignCenter()
+                    ->getStateUsing(fn (Barang $record): int => $record->stok_tersedia),
                 
-                Tables\Columns\TextColumn::make('kondisi')
-                    ->label('Kondisi')
-                    ->badge()
-                    ->color(fn (string $state): string => match ($state) {
-                        'baik' => 'success',
-                        'rusak ringan' => 'warning',
-                        'perlu perbaikan' => 'danger',
-                        'rusak berat' => 'danger',
-                        default => 'gray',
-                    }),
-                
-                Tables\Columns\TextColumn::make('lokasi')
-                    ->label('Lokasi')
-                    ->searchable()
-                    ->toggleable(),
+                Tables\Columns\BadgeColumn::make('kondisi')
+                    ->colors([
+                        'success' => 'baik',
+                        'warning' => 'rusak ringan',
+                        'warning' => 'perlu perbaikan',
+                        'danger' => 'rusak berat',
+                    ]),
                 
                 Tables\Columns\IconColumn::make('tersedia')
-                    ->label('Tersedia')
                     ->boolean()
                     ->alignCenter(),
                 
+                Tables\Columns\TextColumn::make('lokasi')
+                    ->searchable()
+                    ->toggleable(isToggledHiddenByDefault: true),
+                
                 Tables\Columns\TextColumn::make('created_at')
                     ->label('Dibuat')
-                    ->dateTime('d/m/Y H:i')
+                    ->dateTime('d/m/Y')
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
             ])
             ->filters([
-                SelectFilter::make('kategori')
-                    ->relationship('kategori', 'nama')
-                    ->searchable()
-                    ->preload(),
+                Tables\Filters\SelectFilter::make('kategori')
+                    ->relationship('kategori', 'nama'),
                 
-                SelectFilter::make('kondisi')
+                Tables\Filters\SelectFilter::make('kondisi')
                     ->options([
                         'baik' => 'Baik',
                         'rusak ringan' => 'Rusak Ringan',
@@ -195,31 +192,18 @@ class BarangResource extends Resource
                     ]),
                 
                 Tables\Filters\TernaryFilter::make('tersedia')
-                    ->label('Ketersediaan')
-                    ->placeholder('Semua')
-                    ->trueLabel('Tersedia')
-                    ->falseLabel('Tidak Tersedia'),
+                    ->label('Status Ketersediaan'),
             ])
             ->actions([
                 Tables\Actions\ViewAction::make(),
                 Tables\Actions\EditAction::make(),
-                Tables\Actions\DeleteAction::make()
-                    ->requiresConfirmation(),
+                Tables\Actions\DeleteAction::make(),
             ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([
-                    Tables\Actions\DeleteBulkAction::make()
-                        ->requiresConfirmation(),
+                    Tables\Actions\DeleteBulkAction::make(),
                 ]),
-            ])
-            ->defaultSort('created_at', 'desc');
-    }
-
-    public static function getRelations(): array
-    {
-        return [
-            //
-        ];
+            ]);
     }
 
     public static function getPages(): array
@@ -227,7 +211,6 @@ class BarangResource extends Resource
         return [
             'index' => Pages\ListBarangs::route('/'),
             'create' => Pages\CreateBarang::route('/create'),
-            // 'view' => Pages\ViewBarang::route('/{record}'),
             'edit' => Pages\EditBarang::route('/{record}/edit'),
         ];
     }

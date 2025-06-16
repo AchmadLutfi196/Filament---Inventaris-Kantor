@@ -104,6 +104,13 @@
                         <!-- Title -->
                         <h3 class="text-lg font-semibold text-gray-900 mb-1">{{ $barang->nama }}</h3>
                         
+                        <!-- Price -->
+                        @if(isset($barang->harga_sewa_per_hari))
+                        <div class="mb-3">
+                            <span class="text-xl font-bold text-green-600">Rp {{ number_format($barang->harga_sewa_per_hari, 0, ',', '.') }}</span>
+                        </div>
+                        @endif
+                        
                         <!-- Code -->
                         <p class="text-sm text-gray-500 mb-2">{{ $barang->kode_barang }}</p>
 
